@@ -1,0 +1,142 @@
+#include <Wire.h>
+#include <Adafruit_MotorShield.h>
+#include <Servo.h>
+
+// Create the motor shield object with the default I2C address
+Adafruit_MotorShield AFMS = Adafruit_MotorShield();
+
+// Select motor ports M1 and M2
+Adafruit_DCMotor *leftMotors = AFMS.getMotor(1);
+Adafruit_DCMotor *rightMotors = AFMS.getMotor(2);
+
+// Pin assignments for Ultrasonic Sensor
+const int trigPin = A0;
+const int echoPin = A1;
+
+// Obstacle threshold distance in centimeters
+const int maxDistance = 10; 
+
+Servo headServo; // Create servo object to rotate the sensor
+
+void setup() {
+  Serial.begin(9600);
+  
+  // Initialize the Adafruit Motor Shield
+  if (!AFMS.begin()) {         
+    Serial.println("Could not find Motor Shield. Check wiring.");
+    while (1);
+  }
+  Serial.println("Motor Shield Found.");
+
+  // Set initial motor speeds (0 to 255)
+  leftMotors->setSpeed(180);
+  rightMotors->setSpeed(180);
+  
+  // Set pin modes for ultrasonic sensor
+  pinMode(trigPin, OUTPUT);
+  pinMode(echoPin, INPUT);
+
+  // Attach servo to Servo 1 terminal (Pin 10)
+  headServo.attach(10); 
+  
+  // Center the sensor look straight ahead
+  headServo.write(90); 
+  delay(1000);
+}
+
+void loop() {
+  int distance = getDistance();
+
+  if (distance <= maxDistance && distance > 0) {
+    // Obstacle detected! Stop and look around
+    moveStop();
+    delay(300);
+    moveBackward();
+    delay(400);
+    moveStop();
+    delay(200);
+
+    // Look right and left to scan surroundings
+    int distanceRight = lookRight();
+    delay(300);
+    int distanceLeft = lookLeft();
+    delay(300);
+
+    // Turn toward the direction with more clear space
+    if (distanceRight >= distanceLeft) {
+      turnRight();
+      delay(500); // Adjust delay timing to execute roughly a 90-degree turn
+    } else {
+      turnLeft();
+      delay(500); 
+    }
+    moveStop();
+    delay(200);
+  } else {
+    // Path is clear, drive forward
+    moveForward();
+  }
+  delay(50);
+}
+
+// Function to measure distance using the HC-SR04
+int getDistance() {
+  digitalWrite(trigPin, LOW);
+  delayMicroseconds(2);
+  digitalWrite(trigPin, HIGH);
+  delayMicroseconds(10);
+  digitalWrite(trigPin, LOW);
+
+  long duration = pulseIn(echoPin, HIGH);
+  int cm = duration * 0.034 / 2;
+  
+  if (cm == 0 || cm > 250) {
+    return 250; // Ignore outlier out-of-range bounds
+  }
+  return cm;
+}
+
+// Turn neck servo right and get distance
+int lookRight() {
+  headServo.write(20);
+  delay(500);
+  int distance = getDistance();
+  headServo.write(90); // Return back to center
+  return distance;
+}
+
+// Turn neck servo left and get distance
+int lookLeft() {
+  headServo.write(160);
+  delay(500);
+  int distance = getDistance();
+  headServo.write(90); // Return back to center
+  return distance;
+}
+
+// --- Movement Helper Functions ---
+
+void moveForward() {
+  leftMotors->run(FORWARD);
+  rightMotors->run(FORWARD);
+}
+
+void moveBackward() {
+  leftMotors->run(BACKWARD);
+  rightMotors->run(BACKWARD);
+}
+
+void turnRight() {
+  leftMotors->run(FORWARD);
+  rightMotors->run(BACKWARD);
+}
+
+void turnLeft() {
+  leftMotors->run(BACKWARD);
+  rightMotors->run(FORWARD);
+}
+
+void moveStop() {
+  leftMotors->run(RELEASE);
+  rightMotors->run(RELEASE);
+}
