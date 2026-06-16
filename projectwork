@@ -1,0 +1,81 @@
+ #include <Wire.h>
+#include <Adafruit_GFX.h>
+#include <Adafruit_SSD1306.h>
+
+#define SCREEN_WIDTH 128
+#define SCREEN_HEIGHT 64
+
+// Create the display object
+Adafruit_SSD1306 display(SCREEN_WIDTH, SCREEN_HEIGHT, &Wire, -1);
+
+// --- PIN DEFINITIONS ---
+const int waterPin= A3;// Changed to A3 for Analog reading
+const int red = 2;
+int green=3;
+int buzzer =4;
+void buzr (){
+  tone(buzzer,1000);
+  delay(50);
+  tone(buzzer,1500);
+  delay(50);
+  }
+  void buzr1 (){
+    noTone(buzzer);
+    }
+
+int waterValue = 0;
+void redon(){
+  digitalWrite(red,HIGH);
+  delay(50);
+  digitalWrite(red,LOW);
+  delay(50);
+  }
+  void redoff(){
+    digitalWrite(red,LOW);
+    }
+
+void setup() {
+  // Initialize OLED display
+  display.begin(SSD1306_SWITCHCAPVCC, 0x3C);
+  display.clearDisplay();
+  
+  // Set text configuration once (saves processing power)
+  display.setTextSize(2);               
+  display.setTextColor(SSD1306_WHITE);  
+
+  // Initialize LED pin
+  pinMode(red, OUTPUT);
+  pinMode(green,OUTPUT);
+  pinMode(buzzer,OUTPUT);
+}
+
+void loop() {
+  // 1. Read the sensor
+  waterValue = analogRead(waterPin);
+
+  // 2. Clear the old text from the screen buffer
+  display.clearDisplay();
+  display.setCursor(0, 20); 
+
+  // 3. Check the weather status & update screen/LED
+  if (waterValue > 100) {
+    display.print("RAINING !!");
+    redon(); // Turn on LED when raining
+    digitalWrite(green,LOW);
+    buzr();
+   
+  
+  } 
+  else {
+    display.print("SUNNY DAY");
+  redoff();
+  digitalWrite(green,HIGH);
+  buzr1();
+  }
+   
+  // 4. Push the new text to the physical glass screen
+  display.display();
+
+  // 5. Small pause to keep the screen from flickering wildly
+  delay(100); 
+}
