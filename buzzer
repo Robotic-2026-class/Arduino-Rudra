@@ -1,0 +1,39 @@
+int b=8;
+int tig = 6;
+int eco = 7;
+long time;
+int distance;
+int red=2;
+int green=3;
+int blue=4;
+
+void setup(){
+  //pinMode(b,OUTPUT);
+  pinMode(tig,OUTPUT);
+  pinMode(eco,INPUT);
+  }
+void loop (){
+  digitalWrite(tig,LOW);
+  delay(2);
+  digitalWrite(tig,HIGH);
+  delay(10);
+  digitalWrite(tig,LOW);
+  time = pulseIn(eco,HIGH);
+  distance = time*0.034/2;
+  if (distance <=10){
+    tone(b,5000);
+  delay(100);
+  digitalWrite(red,HIGH);
+  digitalWrite(green,LOW);
+  
+    }
+    else{
+      noTone(b);
+      digitalWrite(red,LOW);
+      digitalWrite(green,HIGH);
+      }
+      delay(10);
+  
+  
+  }
+  
