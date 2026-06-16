@@ -1,0 +1,89 @@
+
+#include <Wire.h>
+#include <Adafruit_GFX.h>
+#include <Adafruit_SSD1306.h>
+
+// Dimensions for the 0.91 inch display
+#define SCREEN_WIDTH 128 
+#define SCREEN_HEIGHT 32 
+
+// Create the display object connected via I2C (&Wire)
+Adafruit_SSD1306 display(SCREEN_WIDTH, SCREEN_HEIGHT, &Wire, -1);
+
+int tig = 7;
+int eco = 6;
+int red=3;
+int green=2;
+int yellow=4;
+
+long duration;
+float distance;
+
+void setup() {
+  // Initialize Serial Monitor at 9600 baud rate for troubleshooting
+  Serial.begin(9600);
+
+  // Define pin modes for the HC-SR04 sensor
+  pinMode(tig, OUTPUT);
+  pinMode(eco, INPUT);
+  pinMode(red, OUTPUT);
+  pinMode(green, OUTPUT);
+  pinMode(yellow,OUTPUT);
+
+  // Initialize display with I2C address 0x3C
+  if(!display.begin(SSD1306_SWITCHCAPVCC, 0x3C)) { 
+    Serial.println(F("OLED failed to initialize. Check your A4/A5 pins!"));
+    for(;;); // Halt program execution if display isn't found
+  }
+  
+  // Clear the internal buffer memory and show an empty screen initially
+  display.clearDisplay();
+  display.display();
+}
+
+void loop() {
+  // --- Sensor Read Sequence ---
+  digitalWrite(tig, LOW);
+  delayMicroseconds(2); // Changed to microseconds for better sensor accuracy
+  digitalWrite(tig, HIGH);
+  delayMicroseconds(10); // Changed to microseconds for better sensor accuracy
+  digitalWrite(tig, LOW);
+
+  duration = pulseIn(eco, HIGH);
+  distance = duration * 0.034 / 2;
+  if (distance < 10){
+    digitalWrite(red,HIGH);
+    digitalWrite(green,LOW);
+    digitalWrite(yellow,LOW);
+    }
+    else if (distance <=20 && distance >= 10) {
+      digitalWrite(red,LOW);
+    digitalWrite(green,LOW);
+    digitalWrite(yellow,HIGH);
+      }
+    else if(distance > 20){
+      digitalWrite(red,LOW);
+      digitalWrite(green,HIGH);
+      digitalWrite(yellow,LOW);
+      }
+
+  // --- Display Sequence ---
+  display.clearDisplay(); // Clear the screen so old numbers don't overlap
+
+  // Row 1: Header Static Text
+  display.setTextSize(1);       
+  display.setTextColor(SSD1306_WHITE);  
+  display.setCursor(0, 0);      
+  display.print("DISTANCE:");
+
+  // Row 2: Dynamic Distance Text
+  display.setTextSize(2); // Changed from 1.6 to an integer (2)       
+  display.setCursor(0, 14);     
+  display.print(distance);
+  display.print(" cm"); // Added units so you know what you're measuring!
+
+  // Render everything onto the physical screen
+  display.display(); 
+   
+  delay(100); // Small delay to prevent the screen from flickering violently
+}
